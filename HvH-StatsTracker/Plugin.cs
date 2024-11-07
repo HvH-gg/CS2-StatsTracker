@@ -11,7 +11,7 @@ namespace HvH_StatsTracker;
 public class StatsTracker : BasePlugin, IPluginConfig<Cs2StatsTrackerConfig>
 {
     public override string ModuleName => "HvH.gg - Stats Tracker";
-    public override string ModuleVersion => "0.1.0";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "imi-tat0r";
     public override string ModuleDescription => "HvH.gg Stats Tracker for CS2";
     private const string ModuleShortName = "StatsTracker";

@@ -52,7 +52,7 @@ public class NetworkRoundFactory
             [
                 new KeyValuePair { Key = "game_mode", Value = (_gameMode?.GetPrimitiveValue<int>() ?? 0).ToString() },
                 new KeyValuePair { Key = "game_type", Value = (_gameType?.GetPrimitiveValue<int>() ?? 0).ToString() },
-                new KeyValuePair { Key = "mp_teammates_are_enemies", Value = (_teamMatesAreEnemies?.GetPrimitiveValue<bool>() ?? false).ToString() }
+                new KeyValuePair { Key = "mp_teammates_are_enemies", Value = (_teamMatesAreEnemies?.GetPrimitiveValue<bool>() ?? false ? 1 : 0).ToString() }
             ],
             Players = Utilities.GetPlayers().Select(player => new ServerPlayer
             {
