@@ -1,6 +1,6 @@
 ![Copyright ev0lve Digital](https://img.shields.io/badge/Copyright-ev0lve%20Digital-blue)
 
-# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.0.0)
+# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.0.1)
 
 Our CS2 Stats tracker plugin enables stats tracking for all players on a server and allows the server to participate in "Operation Winter-VACation".
 
