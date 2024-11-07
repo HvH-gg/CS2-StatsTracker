@@ -1,0 +1,7 @@
+{
+   "APIKey": "YOUR_API_KEY",
+   
+   // do not change these
+   "APIUrl": "https://hvh.gg/api/",
+   "ConfigVersion": 1
+}
