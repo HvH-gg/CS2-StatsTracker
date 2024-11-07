@@ -51,22 +51,20 @@ jobs:
       - name: Build
         run: dotnet build -c Release --no-restore /p:Version=${{ env.VERSION_NUMBER }}
 
-      - name: Extract NuGet package names from .csproj
-        id: extract_packages
-        run: |
-          # Extract package names from the .csproj file
-          PACKAGE_NAMES=$(xmllint --xpath 'string-join(//PackageReference/@Include, " ")' HvH-StatsTracker/HvH-StatsTracker.csproj)
-          # Export for use in subsequent steps
-          echo "PACKAGE_NAMES=$PACKAGE_NAMES" >> $GITHUB_ENV
-
-      - name: Copy required NuGet DLLs to release
+      - name: Copy specific NuGet DLLs
         run: |
           mkdir -p release/addons/counterstrikesharp/plugins/HvH-StatsTracker
-          for package in $PACKAGE_NAMES; do
-            # Find and copy each package's DLL files to the release directory
-            find ~/.nuget/packages/$package -name "*.dll" -exec cp {} release/addons/counterstrikesharp/plugins/HvH-StatsTracker/ \;
+          # Define array of required packages
+          PACKAGES=(
+            "microsoft.extensions.http"
+            "asyncawaitbestpractices"
+            "cssharputils"
+            "newtonsoft.json"
+          )
+          # Loop through packages and copy DLLs
+          for package in "${PACKAGES[@]}"; do
+            find ~/.nuget/packages/$package/ -name "*.dll" -exec cp {} release/addons/counterstrikesharp/plugins/HvH-StatsTracker/ \;
           done
-
 
       - name: Create necessary directory structure and copy files
         run: |
