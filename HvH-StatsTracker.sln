@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HvH-StatsTracker", "HvH-StatsTracker\HvH-StatsTracker.csproj", "{ABAFF008-80D5-4BA8-8B20-2CCA81EC02B4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HvH-StatsTracker.Shared", "HvH-StatsTracker.Shared\HvH-StatsTracker.Shared.csproj", "{2D8FDA5C-B664-4641-B613-867F0D723C62}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{ABAFF008-80D5-4BA8-8B20-2CCA81EC02B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ABAFF008-80D5-4BA8-8B20-2CCA81EC02B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ABAFF008-80D5-4BA8-8B20-2CCA81EC02B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D8FDA5C-B664-4641-B613-867F0D723C62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D8FDA5C-B664-4641-B613-867F0D723C62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D8FDA5C-B664-4641-B613-867F0D723C62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D8FDA5C-B664-4641-B613-867F0D723C62}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -16,4 +16,12 @@
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Shared\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\HvH-StatsTracker.Shared\HvH-StatsTracker.Shared.csproj" />
+    </ItemGroup>
+
 </Project>

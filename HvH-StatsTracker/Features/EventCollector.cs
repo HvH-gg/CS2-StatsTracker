@@ -13,10 +13,11 @@ namespace HvH_StatsTracker.Features;
 public class EventCollector
 {
     private bool _shouldCollect;
+    private bool _hasMatchIdOverride;
     private readonly List<Event> _events = [];
     private int _roundEventId;
     private CCSGameRules? _gameRules;
-    public Guid MatchId;
+    public Guid MatchId { get; private set; }
 
     private readonly ILogger<EventCollector> _logger;
     private readonly Networking _networking;
@@ -56,6 +57,13 @@ public class EventCollector
         
         plugin.RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         plugin.RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
+    }
+
+    public void SetMatchId(Guid matchId)
+    {
+        MatchId = matchId;
+        _hasMatchIdOverride = true;
+        _logger.LogInformation("Match ID overridden to {MatchId}", matchId);
     }
 
     private void StartCollecting()
@@ -103,15 +111,23 @@ public class EventCollector
     
     private HookResult OnRoundAnnounceMatchStart(EventRoundAnnounceMatchStart e, GameEventInfo info)
     {
-        MatchId = Guid.NewGuid();
+        if (!_hasMatchIdOverride)
+        {
+            MatchId = Guid.NewGuid();
+        }
+
         StartCollecting();
         return HookResult.Continue;
     }
 
     private HookResult OnCsWinPanelMatch(EventCsWinPanelMatch e, GameEventInfo info)
     {
+        _events.Add(CreateEvent(e.EventName, 
+            new KeyValuePair { Key = "dummy", Value = "value" }
+        ));
         StopCollecting();
         _networking.SubmitRoundData(_events, MatchId);
+        _hasMatchIdOverride = false;
         return HookResult.Continue;
     }
 

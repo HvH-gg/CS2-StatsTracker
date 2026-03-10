@@ -26,6 +26,7 @@ public class Networking
     {
         if (events.Count > 0)
         {
+            _networkRoundFactory.PrepareRound(matchId);
             var roundInput = _networkRoundFactory.GetCurrentRoundInput(matchId);
             roundInput.Events = events;
 

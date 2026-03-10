@@ -108,6 +108,40 @@ public class ServerPlayer
     public string MatchId { get; set; } = null!;
 }
 
+
+public class RoundCombatPlayer
+{
+    [JsonPropertyName("steamId")]
+    public string SteamId { get; set; } = string.Empty;
+
+    [JsonPropertyName("assists")]
+    public int? Assists { get; set; }
+
+    [JsonPropertyName("damage")]
+    public int? Damage { get; set; }
+
+    [JsonPropertyName("utilityDamage")]
+    public int? UtilityDamage { get; set; }
+
+    [JsonPropertyName("deaths")]
+    public int? Deaths { get; set; }
+
+    [JsonPropertyName("firstKills")]
+    public int? FirstKills { get; set; }
+
+    [JsonPropertyName("headshotKills")]
+    public int? HeadshotKills { get; set; }
+
+    [JsonPropertyName("kills")]
+    public int? Kills { get; set; }
+
+    [JsonPropertyName("mvps")]
+    public int? Mvps { get; set; }
+
+    [JsonPropertyName("score")]
+    public int? Score { get; set; }
+}
+
 public class RoundInput
 {
     [Required]
@@ -129,7 +163,19 @@ public class RoundInput
     [Required]
     [JsonPropertyName("roundNumber")]
     public int RoundNumber { get; set; }
+    
+    [Required]
+    [JsonPropertyName("ctScore")]
+    public int CtScore { get; set; }
+    
+    [Required]
+    [JsonPropertyName("tScore")]
+    public int TScore { get; set; }
 
+    [Required]
+    [JsonPropertyName("combat")]
+    public List<RoundCombatPlayer> Combat { get; set; } = [];
+    
     [Required]
     [JsonPropertyName("players")]
     public List<ServerPlayer> Players { get; set; } = [];
