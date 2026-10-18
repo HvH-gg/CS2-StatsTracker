@@ -2,7 +2,6 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Events;
-using CSSharpUtils.Extensions;
 using CSSharpUtils.Utils;
 using HvH_StatsTracker.Models;
 using Microsoft.Extensions.Logging;
@@ -12,7 +11,8 @@ namespace HvH_StatsTracker.Features;
 
 public class EventCollector
 {
-    private bool _shouldCollect;
+    // Disabled between cs_win_panel_match and the next match or map start, like the CSGO tracker.
+    private bool _shouldCollect = true;
     private bool _hasMatchIdOverride;
     private readonly List<Event> _events = [];
     private int _roundEventId;
@@ -21,7 +21,7 @@ public class EventCollector
 
     private readonly ILogger<EventCollector> _logger;
     private readonly Networking _networking;
-    
+
     public EventCollector(StatsTracker plugin, ILogger<EventCollector> logger, Networking networking)
     {
         _logger = logger;
@@ -29,32 +29,35 @@ public class EventCollector
         MatchId = Guid.NewGuid();
 
         _logger.LogInformation("Registering event handlers");
-        
+
+        plugin.RegisterListener<Listeners.OnMapStart>(OnMapStart);
+        plugin.RegisterListener<Listeners.OnMapEnd>(OnMapEnd);
+
         plugin.RegisterEventHandler<EventRoundAnnounceMatchStart>(OnRoundAnnounceMatchStart);
         plugin.RegisterEventHandler<EventCsWinPanelMatch>(OnCsWinPanelMatch);
-        
+
         plugin.RegisterEventHandler<EventBotTakeover>(OnBotTakeover);
-        
+
         plugin.RegisterEventHandler<EventBombBeginplant>(OnBombEvent);
         plugin.RegisterEventHandler<EventBombAbortplant>(OnBombEvent);
         plugin.RegisterEventHandler<EventBombPlanted>(OnBombEvent);
         plugin.RegisterEventHandler<EventBombDefused>(OnBombEvent);
         plugin.RegisterEventHandler<EventBombExploded>(OnBombEvent);
-        
+
         plugin.RegisterEventHandler<EventHostageFollows>(OnHostageEvent);
         plugin.RegisterEventHandler<EventHostageRescued>(OnHostageEvent);
         plugin.RegisterEventHandler<EventHostageStopsFollowing>(OnHostageEvent);
-        
+
         plugin.RegisterEventHandler<EventWeaponFire>(OnWeaponFire);
-        
+
         plugin.RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         plugin.RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
         plugin.RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
-        
+
         plugin.RegisterEventHandler<EventRoundMvp>(OnRoundMvp);
         plugin.RegisterEventHandler<EventRoundStart>(OnRoundStart);
         plugin.RegisterEventHandler<EventRoundEnd>(OnRoundEnd);
-        
+
         plugin.RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
         plugin.RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
     }
@@ -66,49 +69,67 @@ public class EventCollector
         _logger.LogInformation("Match ID overridden to {MatchId}", matchId);
     }
 
-    private void StartCollecting()
+    // Starts a new round buffer. The backend needs round_start as the first event of every round.
+    private void StartRound()
     {
         _events.Clear();
-        _shouldCollect = true;
         _roundEventId = 0;
-        _logger.LogInformation("Started collecting events");
+        _events.Add(CreateEvent("round_start"));
     }
 
-    private void StopCollecting()
+    // Sends the buffered round, the backend rejects rounds without round_end so those are dropped.
+    private void FlushRound()
     {
-        _shouldCollect = false;
-        _logger.LogInformation("Stopped collecting events");
+        if (_events.Any(e => e.Name == "round_end"))
+            _networking.SubmitRoundData(_events, MatchId);
+
+        _events.Clear();
+        _roundEventId = 0;
     }
-    
+
+    private void OnMapStart(string mapName)
+    {
+        _gameRules = null;
+        _events.Clear();
+        _roundEventId = 0;
+        _shouldCollect = true;
+    }
+
+    // the next round_start happens on another map, so flush here
+    private void OnMapEnd()
+    {
+        FlushRound();
+    }
+
     private HookResult OnPlayerDisconnect(EventPlayerDisconnect e, GameEventInfo info)
     {
-        if (!_shouldCollect)
+        if (!_shouldCollect || e.Userid is not { IsValid: true, IsBot: false })
             return HookResult.Continue;
 
-        _events.Add(CreateEvent("player_disconnect", 
-            new KeyValuePair { Key = "userid", Value = e.Userid?.UserId.ToString() ?? "0" },
-            new KeyValuePair { Key = "teamid", Value = e.Userid?.TeamNum.ToString() ?? "0" },
-            new KeyValuePair { Key = "steamid", Value = e.Userid?.SteamID.ToString() ?? "0" },
+        _events.Add(CreateEvent("player_disconnect",
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) },
+            new KeyValuePair { Key = "teamid", Value = e.Userid.TeamNum.ToString() },
+            new KeyValuePair { Key = "steamid", Value = e.Userid.SteamID.ToString() },
             new KeyValuePair { Key = "reason", Value = e.Reason.ToString() }
         ));
-        
+
         return HookResult.Continue;
     }
-    
+
     private HookResult OnPlayerConnectFull(EventPlayerConnectFull e, GameEventInfo info)
     {
-        if (!_shouldCollect)
+        if (!_shouldCollect || e.Userid is not { IsValid: true, IsBot: false })
             return HookResult.Continue;
 
-        _events.Add(CreateEvent("player_connect", 
-            new KeyValuePair { Key = "userid", Value = e.Userid?.UserId.ToString() ?? "0" },
-            new KeyValuePair { Key = "teamid", Value = e.Userid?.TeamNum.ToString() ?? "0" },
-            new KeyValuePair { Key = "steamid", Value = e.Userid?.SteamID.ToString() ?? "0" }
+        _events.Add(CreateEvent("player_connect",
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) },
+            new KeyValuePair { Key = "teamid", Value = e.Userid.TeamNum.ToString() },
+            new KeyValuePair { Key = "steamid", Value = e.Userid.SteamID.ToString() }
         ));
-        
+
         return HookResult.Continue;
     }
-    
+
     private HookResult OnRoundAnnounceMatchStart(EventRoundAnnounceMatchStart e, GameEventInfo info)
     {
         if (!_hasMatchIdOverride)
@@ -116,18 +137,23 @@ public class EventCollector
             MatchId = Guid.NewGuid();
         }
 
-        StartCollecting();
+        _shouldCollect = true;
+        _logger.LogInformation("Started collecting events");
         return HookResult.Continue;
     }
 
     private HookResult OnCsWinPanelMatch(EventCsWinPanelMatch e, GameEventInfo info)
     {
-        _events.Add(CreateEvent(e.EventName, 
-            new KeyValuePair { Key = "dummy", Value = "value" }
-        ));
-        StopCollecting();
-        _networking.SubmitRoundData(_events, MatchId);
+        if (!_shouldCollect)
+            return HookResult.Continue;
+
+        _events.Add(CreateEvent(e.EventName));
+
+        // flush what is buffered, the next round_start may never arrive
+        FlushRound();
+        _shouldCollect = false;
         _hasMatchIdOverride = false;
+        _logger.LogInformation("Stopped collecting events");
         return HookResult.Continue;
     }
 
@@ -136,10 +162,11 @@ public class EventCollector
         if (!_shouldCollect)
             return HookResult.Continue;
 
-        _events.Add(CreateEvent(e.EventName, 
-            new KeyValuePair { Key = "userid", Value = e.Userid?.UserId.ToString() ?? "0" }
+        _events.Add(CreateEvent(e.EventName,
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) },
+            new KeyValuePair { Key = "botid", Value = UserRef(e.Botid) }
         ));
-        
+
         return HookResult.Continue;
     }
 
@@ -148,12 +175,8 @@ public class EventCollector
         if (!_shouldCollect)
             return HookResult.Continue;
 
-        var player = e.Get<CCSPlayerController>("userid");
-        if (!player.IsPlayer())
-            return HookResult.Continue;
-        
-        _events.Add(CreateEvent(e.EventName, 
-            new KeyValuePair { Key = "userid", Value = player.UserId.ToString() },
+        _events.Add(CreateEvent(e.EventName,
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Get<CCSPlayerController>("userid")) },
             new KeyValuePair { Key = "site", Value = e.Get<short>("site").ToString() }
         ));
 
@@ -165,12 +188,8 @@ public class EventCollector
         if (!_shouldCollect)
             return HookResult.Continue;
 
-        var player = e.Get<CCSPlayerController>("userid");
-        if (!player.IsPlayer())
-            return HookResult.Continue;
-        
-        _events.Add(CreateEvent(e.EventName, 
-            new KeyValuePair { Key = "userid", Value = player.UserId.ToString() },
+        _events.Add(CreateEvent(e.EventName,
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Get<CCSPlayerController>("userid")) },
             new KeyValuePair { Key = "hostage", Value = e.Get<short>("hostage").ToString() }
         ));
 
@@ -181,12 +200,12 @@ public class EventCollector
     {
         if (!_shouldCollect)
             return HookResult.Continue;
-        
-        _events.Add(CreateEvent(e.EventName, 
-            new KeyValuePair { Key = "userid", Value = e.Userid?.UserId.ToString() ?? "0" },
-            new KeyValuePair { Key = "weapon", Value = e.Weapon }
+
+        _events.Add(CreateEvent(e.EventName,
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) },
+            new KeyValuePair { Key = "weapon", Value = StripWeaponPrefix(e.Weapon) }
         ));
-        
+
         return HookResult.Continue;
     }
 
@@ -195,10 +214,10 @@ public class EventCollector
         if (!_shouldCollect)
             return HookResult.Continue;
 
-        _events.Add(CreateEvent(e.EventName, 
-            new KeyValuePair { Key = "userid", Value = e.Userid?.UserId.ToString() ?? "0" }
+        _events.Add(CreateEvent(e.EventName,
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) }
         ));
-        
+
         return HookResult.Continue;
     }
 
@@ -208,27 +227,22 @@ public class EventCollector
             return HookResult.Continue;
 
         var eventPlayerDeath = CreateEvent(e.EventName,
-            new KeyValuePair { Key = "userid", Value = e.Userid?.UserId.ToString() ?? "0" },
-            new KeyValuePair { Key = "attacker", Value = e.Attacker?.UserId.ToString() ?? "0" },
-            new KeyValuePair { Key = "assister", Value = e.Assister?.UserId.ToString() ?? "0" },
-            new KeyValuePair { Key = "weapon", Value = e.Weapon },
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) },
+            new KeyValuePair { Key = "attacker", Value = UserRef(e.Attacker) },
+            new KeyValuePair { Key = "assister", Value = UserRef(e.Assister) },
+            new KeyValuePair { Key = "weapon", Value = StripWeaponPrefix(e.Weapon) },
             new KeyValuePair { Key = "headshot", Value = e.Headshot ? "true" : "false" },
             new KeyValuePair { Key = "penetrated", Value = e.Penetrated > 0 ? "true" : "false" },
             new KeyValuePair { Key = "attackerinair", Value = e.Attackerinair ? "true" : "false" },
             new KeyValuePair { Key = "noscope", Value = e.Noscope ? "true" : "false" }
         );
 
-        if (e.Userid.IsPlayer())
-            eventPlayerDeath.KvPairs.AddRange(GetPlayerPosition("userid", e.Userid!));
-        
-        if (e.Attacker.IsPlayer())
-            eventPlayerDeath.KvPairs.AddRange(GetPlayerPosition("attacker", e.Attacker!));
-        
-        if (e.Assister.IsPlayer())
-            eventPlayerDeath.KvPairs.AddRange(GetPlayerPosition("assister", e.Assister!));
-        
+        eventPlayerDeath.KvPairs.AddRange(GetPlayerPosition("userid", e.Userid));
+        eventPlayerDeath.KvPairs.AddRange(GetPlayerPosition("attacker", e.Attacker));
+        eventPlayerDeath.KvPairs.AddRange(GetPlayerPosition("assister", e.Assister));
+
         _events.Add(eventPlayerDeath);
-        
+
         return HookResult.Continue;
     }
 
@@ -238,23 +252,20 @@ public class EventCollector
             return HookResult.Continue;
 
         var eventPlayerHurt = CreateEvent(e.EventName,
-            new KeyValuePair { Key = "userid", Value = e.Userid?.UserId.ToString() ?? "0" },
-            new KeyValuePair { Key = "attacker", Value = e.Attacker?.UserId.ToString() ?? "0" },
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) },
+            new KeyValuePair { Key = "attacker", Value = UserRef(e.Attacker) },
             new KeyValuePair { Key = "health", Value = e.Health.ToString() },
             new KeyValuePair { Key = "armor", Value = e.Armor.ToString() },
             new KeyValuePair { Key = "hitgroup", Value = e.Hitgroup.ToString() },
-            new KeyValuePair { Key = "weapon", Value = e.Weapon },
+            new KeyValuePair { Key = "weapon", Value = StripWeaponPrefix(e.Weapon) },
             new KeyValuePair { Key = "dmg_health", Value = e.DmgHealth.ToString() }
         );
 
-        if (e.Userid.IsPlayer())
-            eventPlayerHurt.KvPairs.AddRange(GetPlayerPosition("userid", e.Userid!));
-        
-        if (e.Attacker.IsPlayer())
-            eventPlayerHurt.KvPairs.AddRange(GetPlayerPosition("attacker", e.Attacker!));
-        
+        eventPlayerHurt.KvPairs.AddRange(GetPlayerPosition("userid", e.Userid));
+        eventPlayerHurt.KvPairs.AddRange(GetPlayerPosition("attacker", e.Attacker));
+
         _events.Add(eventPlayerHurt);
-        
+
         return HookResult.Continue;
     }
 
@@ -264,12 +275,12 @@ public class EventCollector
             return HookResult.Continue;
 
         var eventRoundMvp = CreateEvent(e.EventName,
-            new KeyValuePair { Key = "userid", Value = e.Userid?.UserId.ToString() ?? "0" },
+            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) },
             new KeyValuePair { Key = "reason", Value = e.Reason.ToString() }
         );
-        
+
         _events.Add(eventRoundMvp);
-        
+
         return HookResult.Continue;
     }
 
@@ -277,51 +288,74 @@ public class EventCollector
     {
         // update game rules
         _gameRules = GameUtils.GetGameRules();
-        
-        _networking.SubmitRoundData(_events, MatchId);
-        
-        StartCollecting();
+
+        if (!_shouldCollect)
+            return HookResult.Continue;
+
+        // flush the round that just finished before starting a new buffer
+        FlushRound();
+        _networking.PrepareNextRound(MatchId);
+
+        StartRound();
         return HookResult.Continue;
     }
 
+    // Collection keeps running after round_end, round_mvp and late events still belong to this round.
     private HookResult OnRoundEnd(EventRoundEnd e, GameEventInfo info)
     {
         if (!_shouldCollect)
             return HookResult.Continue;
 
-        _events.Add(CreateEvent(e.EventName, 
+        _events.Add(CreateEvent(e.EventName,
             new KeyValuePair { Key = "winner", Value = e.Winner.ToString() },
             new KeyValuePair { Key = "reason", Value = e.Reason.ToString() }
         ));
-        
-        StopCollecting();
-        
+
         return HookResult.Continue;
     }
-    
+
     private Event CreateEvent(string name, params KeyValuePair[] kvPairs)
     {
         var plantedBombEntity = Utilities.FindAllEntitiesByDesignerName<CPlantedC4>("planted_c4").FirstOrDefault();
         _gameRules ??= GameUtils.GetGameRules();
-        
+        var now = Server.CurrentTime;
+
         return new Event
         {
             Id = _roundEventId++,
             Name = name,
             ServerTick = Server.TickCount,
-            BombTimer = plantedBombEntity == null ? -1 : plantedBombEntity.C4Blow - Server.CurrentTime,
-            BombDefuseTime = plantedBombEntity == null ? -1 : plantedBombEntity.DefuseCountDown - Server.CurrentTime,
+            // seconds left until detonation / until the defuse finishes, -1 when there is none
+            BombTimer = plantedBombEntity == null ? -1 : Math.Max(0, plantedBombEntity.C4Blow - now),
+            BombDefuseTime = plantedBombEntity is { BeingDefused: true }
+                ? Math.Max(0, plantedBombEntity.DefuseCountDown - now)
+                : -1,
             IsWarmup = _gameRules?.WarmupPeriod ?? true,
             KvPairs = kvPairs.ToList()
         };
     }
-    
-    private static List<KeyValuePair> GetPlayerPosition(string name, CCSPlayerController player)
+
+    // Entity index, the same id the CSGO tracker sends (client index). 0 means nobody.
+    private static string UserRef(CCSPlayerController? player)
     {
-        var origin = player.AbsOrigin;
+        return player is { IsValid: true } ? player.Index.ToString() : "0";
+    }
+
+    // The backend prepends "weapon_" itself, so the prefix has to be stripped here.
+    private static string StripWeaponPrefix(string weapon)
+    {
+        return weapon.StartsWith("weapon_") ? weapon["weapon_".Length..] : weapon;
+    }
+
+    private static List<KeyValuePair> GetPlayerPosition(string name, CCSPlayerController? player)
+    {
+        if (player is not { IsValid: true })
+            return [];
+
+        var origin = player.PlayerPawn.Value?.AbsOrigin;
         if (origin == null)
             return [];
-        
+
         return
         [
             new KeyValuePair { Key = $"{name}_x", Value = origin.X.ToString(CultureInfo.InvariantCulture) },

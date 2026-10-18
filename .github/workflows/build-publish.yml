@@ -6,19 +6,15 @@ on:
       - master
     paths-ignore:
       - 'README.MD'
-      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
-  build:
+  check-version:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+      exists: ${{ steps.check_version.outputs.exists }}
     steps:
-      - name: Prepare env
-        shell: bash
-        run: echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
-
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -30,15 +26,36 @@ jobs:
             echo "No version number found in README.md. Exiting."
             exit 1
           fi
-          echo "VERSION_NUMBER=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Check if version already exists
         id: check_version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh release view "${{ env.VERSION_NUMBER }}" > /dev/null 2>&1; then
-            echo "Version ${{ env.VERSION_NUMBER }} already exists. Exiting."
-            exit 0
+          # releases are tagged v<version>, see "Create GitHub Release" below
+          if gh release view "v${{ steps.extract_version.outputs.version }}" > /dev/null 2>&1; then
+            echo "Version ${{ steps.extract_version.outputs.version }} already exists. Skipping build."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
           fi
+
+  build:
+    needs: check-version
+    if: needs.check-version.outputs.exists != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION_NUMBER: ${{ needs.check-version.outputs.version }}
+    steps:
+      - name: Prepare env
+        shell: bash
+        run: echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Build runtime ${{ env.VERSION_NUMBER }}
         uses: actions/setup-dotnet@v3
@@ -59,7 +76,6 @@ jobs:
             "microsoft.extensions.http"
             "asyncawaitbestpractices"
             "cssharputils"
-            "newtonsoft.json"
           )
           # Loop through packages and copy DLLs
           for package in "${PACKAGES[@]}"; do

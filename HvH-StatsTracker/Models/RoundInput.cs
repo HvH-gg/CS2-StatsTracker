@@ -103,9 +103,9 @@ public class ServerPlayer
     [Required]
     [JsonPropertyName("cheatId")]
     public int CheatId { get; set; } = 0;
-    
-    [JsonIgnore]
-    public string MatchId { get; set; } = null!;
+
+    [JsonPropertyName("isBot")]
+    public bool IsBot { get; set; }
 }
 
 
@@ -125,9 +125,6 @@ public class RoundCombatPlayer
 
     [JsonPropertyName("deaths")]
     public int? Deaths { get; set; }
-
-    [JsonPropertyName("firstKills")]
-    public int? FirstKills { get; set; }
 
     [JsonPropertyName("headshotKills")]
     public int? HeadshotKills { get; set; }

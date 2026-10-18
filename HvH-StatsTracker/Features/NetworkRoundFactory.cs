@@ -41,7 +41,7 @@ public class NetworkRoundFactory
         var terrorists = teams.First(team => (CsTeam)team.TeamNum == CsTeam.Terrorist);
         var cts = teams.First(team => (CsTeam)team.TeamNum == CsTeam.CounterTerrorist);
 
-        _currentRoundInput.Combat = Utilities.GetPlayers().Select(player => new RoundCombatPlayer
+        _currentRoundInput.Combat = Utilities.GetPlayers().Where(player => !player.IsBot).Select(player => new RoundCombatPlayer
         {
             SteamId = player.SteamID.ToString(),
             Kills = player.ActionTrackingServices?.MatchStats.Kills,
@@ -50,7 +50,6 @@ public class NetworkRoundFactory
             Damage = player.ActionTrackingServices?.MatchStats.Damage,
             UtilityDamage = player.ActionTrackingServices?.MatchStats.UtilityDamage,
             HeadshotKills = player.ActionTrackingServices?.MatchStats.HeadShotKills,
-            FirstKills = 0,
             Mvps = player.MVPs,
             Score = player.Score,
         }).ToList();
@@ -81,7 +80,7 @@ public class NetworkRoundFactory
             Software = 0,
             MatchId = matchId.ToString(),
             Map = Server.MapName,
-            SenderSteamId = "0",
+            SenderSteamId = "server",
             Cvars =
             [
                 new KeyValuePair { Key = "game_mode", Value = (_gameMode?.GetPrimitiveValue<int>() ?? 0).ToString() },
@@ -89,14 +88,17 @@ public class NetworkRoundFactory
                 new KeyValuePair { Key = "mp_teammates_are_enemies", Value = (_teamMatesAreEnemies?.GetPrimitiveValue<bool>() ?? false ? 1 : 0).ToString() },
                 new KeyValuePair { Key = "steamworks_sessionid_server", Value = _sessionId?.StringValue ?? "0" }
             ],
-            Players = Utilities.GetPlayers().Select(player => new ServerPlayer
-            {
-                UserId = player.UserId ?? 0,
-                SteamId = player.SteamID.ToString(),
-                TeamId = player.TeamNum,
-                CheatId = 0,
-                MatchId = matchId.ToString()
-            }).ToList()
+            // T and CT only; bots are sent so the backend knows who is alive, it never credits them
+            Players = Utilities.GetPlayers()
+                .Where(player => (CsTeam)player.TeamNum is CsTeam.Terrorist or CsTeam.CounterTerrorist)
+                .Select(player => new ServerPlayer
+                {
+                    UserId = (int)player.Index,
+                    SteamId = player.IsBot ? "BOT" : player.SteamID.ToString(),
+                    TeamId = player.TeamNum,
+                    CheatId = 0,
+                    IsBot = player.IsBot
+                }).ToList()
         };
         
         return _currentRoundInput;
