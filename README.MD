@@ -1,12 +1,12 @@
 ![Copyright ev0lve Digital](https://img.shields.io/badge/Copyright-ev0lve%20Digital-blue)
 
-# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.2.0)
+# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.3.0)
 
 Our CS2 Stats tracker plugin enables stats tracking for all players on a server and allows the server to participate in "Operation Winter-VACation".
 
 # Requirements
 - [Metamod:Source](https://www.sourcemm.net/downloads.php/?branch=master)
-- [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp/releases)
+- [CounterStrikeSharp](https://github.com/roflmuffin/CounterStrikeSharp/releases) v1.0.376 or newer (.NET 10 runtime)
 
 # Install
 1. Install Metamod:Source and CounterStrikeSharp

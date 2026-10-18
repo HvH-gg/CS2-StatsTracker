@@ -60,7 +60,7 @@ jobs:
       - name: Build runtime ${{ env.VERSION_NUMBER }}
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Restore dependencies
         run: dotnet restore
@@ -86,7 +86,7 @@ jobs:
         run: |
           mkdir -p release/addons/counterstrikesharp/configs/plugins/HvH-StatsTracker
           cp HvH-StatsTracker/HvH-StatsTracker.json.config.example release/addons/counterstrikesharp/configs/plugins/HvH-StatsTracker/HvH-StatsTracker.json
-          cp -r HvH-StatsTracker/bin/Release/net8.0/* release/addons/counterstrikesharp/plugins/HvH-StatsTracker/
+          cp -r HvH-StatsTracker/bin/Release/net10.0/* release/addons/counterstrikesharp/plugins/HvH-StatsTracker/
 
       - name: Create a ZIP file with binaries
         run: |
