@@ -212,7 +212,10 @@ public class EventCollector
             new KeyValuePair { Key = "attacker", Value = e.Attacker?.UserId.ToString() ?? "0" },
             new KeyValuePair { Key = "assister", Value = e.Assister?.UserId.ToString() ?? "0" },
             new KeyValuePair { Key = "weapon", Value = e.Weapon },
-            new KeyValuePair { Key = "headshot", Value = e.Headshot ? "true" : "false" }
+            new KeyValuePair { Key = "headshot", Value = e.Headshot ? "true" : "false" },
+            new KeyValuePair { Key = "penetrated", Value = e.Penetrated > 0 ? "true" : "false" },
+            new KeyValuePair { Key = "attackerinair", Value = e.Attackerinair ? "true" : "false" },
+            new KeyValuePair { Key = "noscope", Value = e.Noscope ? "true" : "false" }
         );
 
         if (e.Userid.IsPlayer())
