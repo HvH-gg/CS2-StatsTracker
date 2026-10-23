@@ -3,17 +3,17 @@ using AsyncAwaitBestPractices;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CSSharpUtils.Extensions;
-using HvH_StatsTracker.Features;
-using HvH_StatsTracker.Shared;
+using CS2_StatsTracker.Features;
+using CS2_StatsTracker.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace HvH_StatsTracker;
+namespace CS2_StatsTracker;
 
 public class StatsTracker : BasePlugin, IPluginConfig<Cs2StatsTrackerConfig>
 {
     public override string ModuleName => "HvH.gg - Stats Tracker";
-    public override string ModuleVersion => "1.3.0";
+    public override string ModuleVersion => "1.4.0";
     public override string ModuleAuthor => "imi-tat0r";
     public override string ModuleDescription => "HvH.gg Stats Tracker for CS2";
     private const string ModuleShortName = "StatsTracker";

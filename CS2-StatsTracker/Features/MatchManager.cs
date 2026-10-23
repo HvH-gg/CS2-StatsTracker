@@ -1,10 +1,10 @@
-﻿// HvH-StatsTracker
+﻿// CS2-StatsTracker
 // Copyright (c) 2025 AuditExpert GmbH
 // All rights reserved.
 
-using HvH_StatsTracker.Shared;
+using CS2_StatsTracker.Shared;
 
-namespace HvH_StatsTracker.Features;
+namespace CS2_StatsTracker.Features;
 
 public class MatchManager : IMatchManager
 {

@@ -3,11 +3,11 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Utils;
 using CSSharpUtils.Utils;
-using HvH_StatsTracker.Models;
+using CS2_StatsTracker.Models;
 using Microsoft.Extensions.Logging;
-using KeyValuePair = HvH_StatsTracker.Models.KeyValuePair;
+using KeyValuePair = CS2_StatsTracker.Models.KeyValuePair;
 
-namespace HvH_StatsTracker.Features;
+namespace CS2_StatsTracker.Features;
 
 public class NetworkRoundFactory
 {

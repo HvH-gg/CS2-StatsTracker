@@ -1,8 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HvH-StatsTracker", "HvH-StatsTracker\HvH-StatsTracker.csproj", "{ABAFF008-80D5-4BA8-8B20-2CCA81EC02B4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CS2-StatsTracker", "CS2-StatsTracker\CS2-StatsTracker.csproj", "{ABAFF008-80D5-4BA8-8B20-2CCA81EC02B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HvH-StatsTracker.Shared", "HvH-StatsTracker.Shared\HvH-StatsTracker.Shared.csproj", "{2D8FDA5C-B664-4641-B613-867F0D723C62}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CS2-StatsTracker.Shared", "CS2-StatsTracker.Shared\CS2-StatsTracker.Shared.csproj", "{2D8FDA5C-B664-4641-B613-867F0D723C62}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

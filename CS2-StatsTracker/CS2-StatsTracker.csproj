@@ -2,10 +2,10 @@
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
-        <RootNamespace>HvH_StatsTracker</RootNamespace>
+        <RootNamespace>CS2_StatsTracker</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>HvH-StatsTracker</AssemblyName>
+        <AssemblyName>CS2-StatsTracker</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\HvH-StatsTracker.Shared\HvH-StatsTracker.Shared.csproj" />
+      <ProjectReference Include="..\CS2-StatsTracker.Shared\CS2-StatsTracker.Shared.csproj" />
     </ItemGroup>
 
 </Project>

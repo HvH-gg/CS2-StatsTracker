@@ -1,8 +1,8 @@
-﻿// HvH-StatsTracker
+﻿// CS2-StatsTracker
 // Copyright (c) 2025 AuditExpert GmbH
 // All rights reserved.
 
-namespace HvH_StatsTracker.Shared;
+namespace CS2_StatsTracker.Shared;
 
 public interface IMatchManager
 {

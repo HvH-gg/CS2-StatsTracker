@@ -1,10 +1,10 @@
 ﻿using System.Text;
 using System.Text.Json;
 using AsyncAwaitBestPractices;
-using HvH_StatsTracker.Models;
+using CS2_StatsTracker.Models;
 using Microsoft.Extensions.Logging;
 
-namespace HvH_StatsTracker.Features;
+namespace CS2_StatsTracker.Features;
 
 public class Networking
 {

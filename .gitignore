@@ -1,6 +1,6 @@
-﻿HvH-StatsTracker/obj
-HvH-StatsTracker/bin
+﻿CS2-StatsTracker/obj
+CS2-StatsTracker/bin
 .idea
-HvH-StatsTracker.Shared/bin
-HvH-StatsTracker.Shared/obj
+CS2-StatsTracker.Shared/bin
+CS2-StatsTracker.Shared/obj
 *.user

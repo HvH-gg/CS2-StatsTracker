@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace HvH_StatsTracker.Models;
+namespace CS2_StatsTracker.Models;
 
 public class KeyValuePair
 {

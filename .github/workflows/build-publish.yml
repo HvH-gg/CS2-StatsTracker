@@ -70,7 +70,7 @@ jobs:
 
       - name: Copy specific NuGet DLLs
         run: |
-          mkdir -p release/addons/counterstrikesharp/plugins/HvH-StatsTracker
+          mkdir -p release/addons/counterstrikesharp/plugins/CS2-StatsTracker
           # Define array of required packages
           PACKAGES=(
             "microsoft.extensions.http"
@@ -79,19 +79,19 @@ jobs:
           )
           # Loop through packages and copy DLLs
           for package in "${PACKAGES[@]}"; do
-            find ~/.nuget/packages/$package/ -name "*.dll" -exec cp {} release/addons/counterstrikesharp/plugins/HvH-StatsTracker/ \;
+            find ~/.nuget/packages/$package/ -name "*.dll" -exec cp {} release/addons/counterstrikesharp/plugins/CS2-StatsTracker/ \;
           done
 
       - name: Create necessary directory structure and copy files
         run: |
-          mkdir -p release/addons/counterstrikesharp/configs/plugins/HvH-StatsTracker
-          cp HvH-StatsTracker/HvH-StatsTracker.json.config.example release/addons/counterstrikesharp/configs/plugins/HvH-StatsTracker/HvH-StatsTracker.json
-          cp -r HvH-StatsTracker/bin/Release/net10.0/* release/addons/counterstrikesharp/plugins/HvH-StatsTracker/
+          mkdir -p release/addons/counterstrikesharp/configs/plugins/CS2-StatsTracker
+          cp CS2-StatsTracker/CS2-StatsTracker.json.config.example release/addons/counterstrikesharp/configs/plugins/CS2-StatsTracker/CS2-StatsTracker.json
+          cp -r CS2-StatsTracker/bin/Release/net10.0/* release/addons/counterstrikesharp/plugins/CS2-StatsTracker/
 
       - name: Create a ZIP file with binaries
         run: |
           cd release
-          zip -r ../HvH-StatsTracker-${{ env.VERSION_NUMBER }}-${{ env.GITHUB_SHA_SHORT }}.zip addons
+          zip -r ../CS2-StatsTracker-${{ env.VERSION_NUMBER }}-${{ env.GITHUB_SHA_SHORT }}.zip addons
 
       - name: Create GitHub Release
         id: create_release
@@ -114,6 +114,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./HvH-StatsTracker-${{ env.VERSION_NUMBER }}-${{ env.GITHUB_SHA_SHORT }}.zip
-          asset_name: HvH-StatsTracker-${{ env.VERSION_NUMBER }}-${{ env.GITHUB_SHA_SHORT }}.zip
+          asset_path: ./CS2-StatsTracker-${{ env.VERSION_NUMBER }}-${{ env.GITHUB_SHA_SHORT }}.zip
+          asset_name: CS2-StatsTracker-${{ env.VERSION_NUMBER }}-${{ env.GITHUB_SHA_SHORT }}.zip
           asset_content_type: application/zip
