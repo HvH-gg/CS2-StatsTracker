@@ -41,7 +41,9 @@ public class NetworkRoundFactory
         var terrorists = teams.First(team => (CsTeam)team.TeamNum == CsTeam.Terrorist);
         var cts = teams.First(team => (CsTeam)team.TeamNum == CsTeam.CounterTerrorist);
 
-        _currentRoundInput.Combat = Utilities.GetPlayers().Where(player => !player.IsBot).Select(player => new RoundCombatPlayer
+        // the controllers of players who left stay around; only connected players are on the server
+        _currentRoundInput.Combat = Utilities.GetPlayers()
+            .Where(player => !player.IsBot && player.Connected == PlayerConnectedState.Connected).Select(player => new RoundCombatPlayer
         {
             SteamId = player.SteamID.ToString(),
             Kills = player.ActionTrackingServices?.MatchStats.Kills,
@@ -90,7 +92,8 @@ public class NetworkRoundFactory
             ],
             // T and CT only; bots are sent so the backend knows who is alive, it never credits them
             Players = Utilities.GetPlayers()
-                .Where(player => (CsTeam)player.TeamNum is CsTeam.Terrorist or CsTeam.CounterTerrorist)
+                .Where(player => (CsTeam)player.TeamNum is CsTeam.Terrorist or CsTeam.CounterTerrorist &&
+                                 player.Connected == PlayerConnectedState.Connected)
                 .Select(player => new ServerPlayer
                 {
                     UserId = (int)player.Index,

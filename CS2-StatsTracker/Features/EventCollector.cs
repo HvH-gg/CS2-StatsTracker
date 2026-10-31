@@ -214,9 +214,15 @@ public class EventCollector
         if (!_shouldCollect)
             return HookResult.Continue;
 
-        _events.Add(CreateEvent(e.EventName,
-            new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) }
-        ));
+        // who the slot is and the team: a spectator joining a team isn't in the round's player list and sends no
+        // connect, without these the backend can't name him
+        _events.Add(e.Userid is { IsValid: true, IsBot: false }
+            ? CreateEvent(e.EventName,
+                new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) },
+                new KeyValuePair { Key = "steamid", Value = e.Userid.SteamID.ToString() },
+                new KeyValuePair { Key = "teamid", Value = e.Userid.TeamNum.ToString() })
+            : CreateEvent(e.EventName,
+                new KeyValuePair { Key = "userid", Value = UserRef(e.Userid) }));
 
         return HookResult.Continue;
     }
