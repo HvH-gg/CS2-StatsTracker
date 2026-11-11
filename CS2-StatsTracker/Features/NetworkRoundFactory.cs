@@ -59,6 +59,23 @@ public class NetworkRoundFactory
         _currentRoundInput.RoundNumber = gameRules?.TotalRoundsPlayed ?? 0;
         _currentRoundInput.CtScore = cts.Score;
         _currentRoundInput.TScore = terrorists.Score;
+        RefreshSessionId(_currentRoundInput);
+    }
+
+    // The server logs on to Steam a few seconds after a map change, so a round that started before has no session id
+    // ("0") yet: read again when the round is sent, so it goes out under the match's session id already.
+    private void RefreshSessionId(RoundInput round)
+    {
+        var sessionId = _sessionId?.StringValue?.Trim();
+        if (string.IsNullOrEmpty(sessionId) || sessionId == "0")
+            return;
+
+        var index = round.Cvars.FindIndex(c => c.Key == "steamworks_sessionid_server");
+        var entry = new KeyValuePair { Key = "steamworks_sessionid_server", Value = sessionId };
+        if (index >= 0)
+            round.Cvars[index] = entry;
+        else
+            round.Cvars.Add(entry);
     }
     
     public RoundInput GetCurrentRoundInput(Guid matchId)
