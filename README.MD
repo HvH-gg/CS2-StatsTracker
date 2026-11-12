@@ -1,6 +1,6 @@
 ![Copyright ev0lve Digital](https://img.shields.io/badge/Copyright-ev0lve%20Digital-blue)
 
-# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.4.2)
+# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.5.0)
 
 Our CS2 Stats tracker plugin enables stats tracking for all players on a server and allows the server to participate in "Operation Winter-VACation".
 
@@ -26,6 +26,9 @@ Our CS2 Stats tracker plugin enables stats tracking for all players on a server 
    "ConfigVersion": 1
 }
 ```
+
+# Match systems
+If your match system has its own match ids, set `hvhgg_match_id "YOUR_MATCH_ID"` when a match starts and empty it (`hvhgg_match_id ""`) when it is over. Rounds are sent with it, so the match can be found by your id.
 
 # Credits
 - [HvH.gg](https://hvh.gg)

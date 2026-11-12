@@ -19,6 +19,11 @@ public class NetworkRoundFactory
     private ConVar? _sessionId;
     private static RoundInput? _currentRoundInput;
 
+    // Set by a partner's match system, only read here (HvH.gg Recast has the same variable).
+    public readonly FakeConVar<string> PartnerMatchId = new("hvhgg_match_id",
+        "set by a partner's match system: its id of the running match (at most 64 characters, empty when there is none)",
+        "");
+
     public NetworkRoundFactory(ILogger<NetworkRoundFactory> logger)
     {
         _logger = logger;
@@ -60,6 +65,28 @@ public class NetworkRoundFactory
         _currentRoundInput.CtScore = cts.Score;
         _currentRoundInput.TScore = terrorists.Score;
         RefreshSessionId(_currentRoundInput);
+        RefreshPartnerMatchId(_currentRoundInput);
+    }
+
+    // The partner's id of the match as it is when the round is sent; a round without one says nothing about it.
+    // A variable of that name another plugin made in the game comes first, else this plugin's own.
+    private void RefreshPartnerMatchId(RoundInput round)
+    {
+        round.Cvars.RemoveAll(c => c.Key == "hvhgg_match_id");
+        string? id = null;
+        try
+        {
+            // quotes: an emptied variable (hvhgg_match_id "") must read as none however the console hands it on
+            id = ConVar.Find("hvhgg_match_id")?.StringValue?.Trim().Trim('"').Trim();
+        }
+        catch
+        {
+            // not a variable of the game
+        }
+        if (string.IsNullOrEmpty(id))
+            id = PartnerMatchId.Value?.Trim().Trim('"').Trim();
+        if (!string.IsNullOrEmpty(id) && id.Length <= 64)
+            round.Cvars.Add(new KeyValuePair { Key = "hvhgg_match_id", Value = id });
     }
 
     // The server logs on to Steam a few seconds after a map change, so a round that started before has no session id
