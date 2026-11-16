@@ -144,7 +144,8 @@ public class NetworkRoundFactory
                     SteamId = player.IsBot ? "BOT" : player.SteamID.ToString(),
                     TeamId = player.TeamNum,
                     CheatId = 0,
-                    IsBot = player.IsBot
+                    IsBot = player.IsBot,
+                    Ping = player.IsBot ? null : (int)player.Ping
                 }).ToList()
         };
         

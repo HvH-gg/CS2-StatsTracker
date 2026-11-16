@@ -106,6 +106,10 @@ public class ServerPlayer
 
     [JsonPropertyName("isBot")]
     public bool IsBot { get; set; }
+
+    // latency in ms as the scoreboard shows it, null for bots
+    [JsonPropertyName("ping")]
+    public int? Ping { get; set; }
 }
 
 
