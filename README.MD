@@ -2,7 +2,13 @@
 
 # [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.5.0)
 
-Our CS2 Stats tracker plugin enables stats tracking for all players on a server and allows the server to participate in "Operation Winter-VACation".
+Our CS2 Stats tracker plugin enables stats tracking for all players on a server.
+
+# What this plugin does
+This is not a stats tracker for your own server. The plugin sends the rounds played on your server to [HvH.gg](https://hvh.gg), where they count towards the stats of every player on HvH.gg: profiles, rankings and match history. It adds no stats commands, menus or pages to your server itself.
+
+# Scout bot
+Servers without this plugin are visited by the HvH.gg scout bot, which joins to read the scoreboard. While your server sends rounds with this plugin, the scout bot no longer joins your server, so it does not take up a player slot.
 
 # Requirements
 - [Metamod:Source](https://www.sourcemm.net/downloads.php/?branch=master)
