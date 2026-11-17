@@ -1,7 +1,9 @@
 ﻿using System.Globalization;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Events;
+using CounterStrikeSharp.API.Modules.Timers;
 using CSSharpUtils.Utils;
 using CS2_StatsTracker.Models;
 using Microsoft.Extensions.Logging;
@@ -19,16 +21,29 @@ public class EventCollector
     private CCSGameRules? _gameRules;
     public Guid MatchId { get; private set; }
 
+    // A deathmatch has one long round, so it is sent in pieces (segments) of DeathmatchSegmentSeconds instead of at
+    // its end: a crash or map change loses at most one piece. Numbered per map from 1; null while buffering a round.
+    private int _segmentCount;
+    private int? _currentSegment;
+    private float _segmentStartedAt;
+    private ConVar? _gameType;
+    private ConVar? _gameMode;
+
+    private readonly StatsTracker _plugin;
     private readonly ILogger<EventCollector> _logger;
     private readonly Networking _networking;
 
     public EventCollector(StatsTracker plugin, ILogger<EventCollector> logger, Networking networking)
     {
+        _plugin = plugin;
         _logger = logger;
         _networking = networking;
         MatchId = Guid.NewGuid();
 
         _logger.LogInformation("Registering event handlers");
+
+        // closes deathmatch pieces and retries unsent rounds; runs across map changes
+        plugin.AddTimer(1.0f, OnTick, TimerFlags.REPEAT);
 
         plugin.RegisterListener<Listeners.OnMapStart>(OnMapStart);
         plugin.RegisterListener<Listeners.OnMapEnd>(OnMapEnd);
@@ -69,22 +84,62 @@ public class EventCollector
         _logger.LogInformation("Match ID overridden to {MatchId}", matchId);
     }
 
-    // Starts a new round buffer. The backend needs round_start as the first event of every round.
+    // Starts a new round buffer (or deathmatch piece). The backend needs round_start as the first event of every round.
     private void StartRound()
     {
         _events.Clear();
         _roundEventId = 0;
+        _currentSegment = IsDeathmatch() ? ++_segmentCount : null;
+        _segmentStartedAt = Server.CurrentTime;
         _events.Add(CreateEvent("round_start"));
     }
 
-    // Sends the buffered round, the backend rejects rounds without round_end so those are dropped.
+    // Sends the buffered round, the backend rejects rounds without round_end so those are dropped. A deathmatch piece
+    // has no round_end until the match ends and is sent as long as anything happened in it.
     private void FlushRound()
     {
-        if (_events.Any(e => e.Name == "round_end"))
-            _networking.SubmitRoundData(_events, MatchId);
+        if (_events.Any(e => e.Name == "round_end") ||
+            (_currentSegment != null && _events.Any(e => e.Name != "round_start")))
+            _networking.SubmitRoundData(_events, MatchId, _currentSegment);
 
         _events.Clear();
         _roundEventId = 0;
+        _currentSegment = null;
+    }
+
+    private bool IsDeathmatch()
+    {
+        _gameType ??= ConVar.Find("game_type");
+        _gameMode ??= ConVar.Find("game_mode");
+        return _gameType?.GetPrimitiveValue<int>() == 1 && _gameMode?.GetPrimitiveValue<int>() == 2;
+    }
+
+    private void OnTick()
+    {
+        if (_shouldCollect && _currentSegment != null &&
+            Server.CurrentTime - _segmentStartedAt >= Math.Max(10, _plugin.Config.DeathmatchSegmentSeconds))
+        {
+            // the piece so far goes out, the next one starts with the players as they are now
+            FlushRound();
+            _networking.PrepareNextRound(MatchId);
+            StartRound();
+        }
+        else if (_shouldCollect && _currentSegment == null && IsDeathmatch() &&
+                 !_events.Any(e => e.Name == "round_start"))
+        {
+            // loaded in the middle of a deathmatch: its only round_start is long gone, start a piece now
+            _networking.PrepareNextRound(MatchId);
+            StartRound();
+        }
+
+        _networking.Pump();
+    }
+
+    /// <summary>On unload: a deathmatch piece goes into the queue that is saved to disk (a half round would be dropped anyway).</summary>
+    public void FlushOnUnload()
+    {
+        if (_currentSegment != null)
+            FlushRound();
     }
 
     private void OnMapStart(string mapName)
@@ -93,6 +148,8 @@ public class EventCollector
         _events.Clear();
         _roundEventId = 0;
         _shouldCollect = true;
+        _segmentCount = 0;
+        _currentSegment = null;
     }
 
     // the next round_start happens on another map, so flush here

@@ -1,6 +1,6 @@
 ![Copyright ev0lve Digital](https://img.shields.io/badge/Copyright-ev0lve%20Digital-blue)
 
-# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.6.0)
+# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.7.0)
 
 Our CS2 Stats tracker plugin enables stats tracking for all players on a server.
 
@@ -29,9 +29,15 @@ Servers without this plugin are visited by the HvH.gg scout bot, which joins to 
    
    // do not change these
    "APIUrl": "https://hvh.gg/api/",
-   "ConfigVersion": 1
+   "DeathmatchSegmentSeconds": 60,
+   "RetryQueueSize": 500,
+   "RetryMaxAgeMinutes": 300,
+   "RetryMaxDelaySeconds": 300,
+   "ConfigVersion": 2
 }
 ```
+
+A deathmatch has no rounds, so it is sent every `DeathmatchSegmentSeconds`. Rounds that cannot be sent (HvH.gg not reachable) are kept, sent again in order, and saved to disk when the plugin unloads.
 
 # Match systems
 If your match system has its own match ids, set `hvhgg_match_id "YOUR_MATCH_ID"` when a match starts and empty it (`hvhgg_match_id ""`) when it is over. Rounds are sent with it, so the match can be found by your id.

@@ -196,4 +196,8 @@ public class RoundInput
     [Required]
     [JsonPropertyName("cvars")]
     public List<KeyValuePair> Cvars { get; set; } = [];
+
+    // a deathmatch is sent in pieces numbered per map from 1, null for a round
+    [JsonPropertyName("segment")]
+    public int? Segment { get; set; }
 }
