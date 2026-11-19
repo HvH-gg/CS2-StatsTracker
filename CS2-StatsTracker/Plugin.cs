@@ -13,7 +13,7 @@ namespace CS2_StatsTracker;
 public class StatsTracker : BasePlugin, IPluginConfig<Cs2StatsTrackerConfig>
 {
     public override string ModuleName => "HvH.gg - Stats Tracker";
-    public override string ModuleVersion => "1.7.0";
+    public override string ModuleVersion => "1.7.1";
     public override string ModuleAuthor => "imi-tat0r";
     public override string ModuleDescription => "HvH.gg Stats Tracker for CS2";
     private const string ModuleShortName = "StatsTracker";
@@ -54,7 +54,8 @@ public class StatsTracker : BasePlugin, IPluginConfig<Cs2StatsTrackerConfig>
         _serviceProvider.GetRequiredService<Networking>().LoadQueue();
         // hvhgg_match_id lives with the round it is sent in
         RegisterFakeConVars(_serviceProvider.GetRequiredService<NetworkRoundFactory>());
-        _serviceProvider.GetRequiredService<MatchManager>();
+        // other plugins set the match id through stats_tracker:match_manager
+        Capabilities.RegisterPluginCapability(MatchManagerCapability, () => _serviceProvider.GetRequiredService<IMatchManager>());
     }
 
     public override void Unload(bool hotReload)
