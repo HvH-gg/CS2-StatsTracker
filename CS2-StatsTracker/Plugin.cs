@@ -13,7 +13,7 @@ namespace CS2_StatsTracker;
 public class StatsTracker : BasePlugin, IPluginConfig<Cs2StatsTrackerConfig>
 {
     public override string ModuleName => "HvH.gg - Stats Tracker";
-    public override string ModuleVersion => "1.7.2";
+    public override string ModuleVersion => "1.8.0";
     public override string ModuleAuthor => "imi-tat0r";
     public override string ModuleDescription => "HvH.gg Stats Tracker for CS2";
     private const string ModuleShortName = "StatsTracker";
@@ -49,7 +49,8 @@ public class StatsTracker : BasePlugin, IPluginConfig<Cs2StatsTrackerConfig>
         _logger.LogInformation("{ModuleName} Loading Stats Tracker plugin", ModuleShortName);
         
         // resolve the services to instantiate them
-        _serviceProvider.GetRequiredService<EventCollector>();
+        // (with its hvhgg_deathmatch)
+        RegisterFakeConVars(_serviceProvider.GetRequiredService<EventCollector>());
         // rounds the last unload could not send go out first
         _serviceProvider.GetRequiredService<Networking>().LoadQueue();
         // hvhgg_match_id lives with the round it is sent in
@@ -90,6 +91,10 @@ public class Cs2StatsTrackerConfig : BasePluginConfig
 {
     [JsonPropertyName("APIKey")] public string ApiKey { get; set; } = "YOUR_API_KEY";
     [JsonPropertyName("APIUrl")] public string ApiUrl { get; set; } = "https://hvh.gg/api/";
+
+    // true on a server whose deathmatch is made by a plugin (game_type and game_mode are not deathmatch there, so it
+    // is not detected); a server on the game's own deathmatch needs nothing set
+    [JsonPropertyName("Deathmatch")] public bool Deathmatch { get; set; } = false;
 
     // a deathmatch is sent in pieces of this many seconds (at least 10)
     [JsonPropertyName("DeathmatchSegmentSeconds")] public int DeathmatchSegmentSeconds { get; set; } = 60;

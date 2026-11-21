@@ -107,8 +107,18 @@ public class EventCollector
         _currentSegment = null;
     }
 
+    // For a server that runs its deathmatch only at times (a cfg per map or mode sets it); the config's Deathmatch is
+    // the same switch for one that always does.
+    public readonly FakeConVar<bool> Deathmatch = new("hvhgg_deathmatch",
+        "1 while the server runs a deathmatch made by a plugin (not detected: game_type and game_mode are not deathmatch there)",
+        false);
+
+    // The game's own deathmatch (game_type 1, game_mode 2), or the config or hvhgg_deathmatch says the server runs one
+    // (a plugin's).
     private bool IsDeathmatch()
     {
+        if (_plugin.Config.Deathmatch || Deathmatch.Value)
+            return true;
         _gameType ??= ConVar.Find("game_type");
         _gameMode ??= ConVar.Find("game_mode");
         return _gameType?.GetPrimitiveValue<int>() == 1 && _gameMode?.GetPrimitiveValue<int>() == 2;
