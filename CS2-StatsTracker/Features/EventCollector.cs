@@ -107,17 +107,16 @@ public class EventCollector
         _currentSegment = null;
     }
 
-    // For a server that runs its deathmatch only at times (a cfg per map or mode sets it); the config's Deathmatch is
-    // the same switch for one that always does.
+    // The config's Deathmatch is what it starts as (Plugin.Load); a server that runs its deathmatch only at times sets
+    // it in the cfg of the mode. HvH.gg Recast has the same variable and reads it too.
     public readonly FakeConVar<bool> Deathmatch = new("hvhgg_deathmatch",
-        "1 while the server runs a deathmatch made by a plugin (not detected: game_type and game_mode are not deathmatch there)",
+        "1 while the server runs a deathmatch made by a plugin (not detected: game_type and game_mode are not deathmatch there); starts as Deathmatch in the config",
         false);
 
-    // The game's own deathmatch (game_type 1, game_mode 2), or the config or hvhgg_deathmatch says the server runs one
-    // (a plugin's).
+    // The game's own deathmatch (game_type 1, game_mode 2), or hvhgg_deathmatch says the server runs one (a plugin's).
     private bool IsDeathmatch()
     {
-        if (_plugin.Config.Deathmatch || Deathmatch.Value)
+        if (Deathmatch.Value)
             return true;
         _gameType ??= ConVar.Find("game_type");
         _gameMode ??= ConVar.Find("game_mode");

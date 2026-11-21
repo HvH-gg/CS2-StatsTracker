@@ -1,6 +1,6 @@
 ![Copyright ev0lve Digital](https://img.shields.io/badge/Copyright-ev0lve%20Digital-blue)
 
-# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.8.0)
+# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.9.0)
 
 Our CS2 Stats tracker plugin enables stats tracking for all players on a server.
 
@@ -40,7 +40,9 @@ Servers without this plugin are visited by the HvH.gg scout bot, which joins to 
 }
 ```
 
-A deathmatch has no rounds, so it is sent every `DeathmatchSegmentSeconds`. The game's own deathmatch (`game_type 1`, `game_mode 2`) is detected. If a plugin makes your deathmatch on another game mode, set `"Deathmatch": true`, otherwise nothing is counted there. A server that runs it only at times sets `hvhgg_deathmatch 1` while it does (and `0` after), for example in the cfg of the mode. Rounds that cannot be sent (HvH.gg not reachable) are kept, sent again in order, and saved to disk when the plugin unloads.
+A deathmatch has no rounds, so it is sent every `DeathmatchSegmentSeconds`. The game's own deathmatch (`game_type 1`, `game_mode 2`) is detected. If a plugin makes your deathmatch on another game mode, set `"Deathmatch": true`, otherwise nothing is counted there. The setting is what the variable `hvhgg_deathmatch` starts as: a server that runs it only at times leaves the setting off and sets `hvhgg_deathmatch 1` while it does (and `0` after), for example in the cfg of the mode. HvH.gg Recast reads the same variable. Rounds that cannot be sent (HvH.gg not reachable) are kept, sent again in order, and saved to disk when the plugin unloads.
+
+After changing the config file, `hvhgg_reload_config` in the server console reads it again (no restart needed).
 
 # Match systems
 If your match system has its own match ids, set `hvhgg_match_id "YOUR_MATCH_ID"` when a match starts and empty it (`hvhgg_match_id ""`) when it is over. Rounds are sent with it, so the match can be found by your id.
