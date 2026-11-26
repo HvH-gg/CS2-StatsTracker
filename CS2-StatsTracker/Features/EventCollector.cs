@@ -53,15 +53,17 @@ public class EventCollector
 
         plugin.RegisterEventHandler<EventBotTakeover>(OnBotTakeover);
 
-        plugin.RegisterEventHandler<EventBombBeginplant>(OnBombEvent);
-        plugin.RegisterEventHandler<EventBombAbortplant>(OnBombEvent);
-        plugin.RegisterEventHandler<EventBombPlanted>(OnBombEvent);
-        plugin.RegisterEventHandler<EventBombDefused>(OnBombEvent);
-        plugin.RegisterEventHandler<EventBombExploded>(OnBombEvent);
+        // Typed lambdas, not the shared GameEvent method group: CounterStrikeSharp builds the event object from the
+        // handler method's parameter type, so a GameEvent parameter makes it hand a plain GameEvent to a typed delegate.
+        plugin.RegisterEventHandler<EventBombBeginplant>((e, info) => OnBombEvent(e, info));
+        plugin.RegisterEventHandler<EventBombAbortplant>((e, info) => OnBombEvent(e, info));
+        plugin.RegisterEventHandler<EventBombPlanted>((e, info) => OnBombEvent(e, info));
+        plugin.RegisterEventHandler<EventBombDefused>((e, info) => OnBombEvent(e, info));
+        plugin.RegisterEventHandler<EventBombExploded>((e, info) => OnBombEvent(e, info));
 
-        plugin.RegisterEventHandler<EventHostageFollows>(OnHostageEvent);
-        plugin.RegisterEventHandler<EventHostageRescued>(OnHostageEvent);
-        plugin.RegisterEventHandler<EventHostageStopsFollowing>(OnHostageEvent);
+        plugin.RegisterEventHandler<EventHostageFollows>((e, info) => OnHostageEvent(e, info));
+        plugin.RegisterEventHandler<EventHostageRescued>((e, info) => OnHostageEvent(e, info));
+        plugin.RegisterEventHandler<EventHostageStopsFollowing>((e, info) => OnHostageEvent(e, info));
 
         plugin.RegisterEventHandler<EventWeaponFire>(OnWeaponFire);
 
