@@ -200,4 +200,29 @@ public class RoundInput
     // a deathmatch is sent in pieces numbered per map from 1, null for a round
     [JsonPropertyName("segment")]
     public int? Segment { get; set; }
+
+    // left out when there are none
+    [JsonPropertyName("shotInfo")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<PlayerShotInfo>? ShotInfo { get; set; }
+}
+
+/// <summary>A player's shots, in the order fired.</summary>
+public class PlayerShotInfo
+{
+    [JsonPropertyName("steamId")]
+    public string SteamId { get; init; } = string.Empty;
+
+    [JsonPropertyName("shots")]
+    public List<ShotInfo> Shots { get; init; } = [];
+}
+
+/// <summary>Where a shot was fired from and at which angles, x y z each.</summary>
+public class ShotInfo
+{
+    [JsonPropertyName("origin")]
+    public float[] Origin { get; init; } = [];
+
+    [JsonPropertyName("angles")]
+    public float[] Angles { get; init; } = [];
 }

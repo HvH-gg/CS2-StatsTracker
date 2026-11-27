@@ -46,7 +46,7 @@ public class Networking
     }
 
     /// <param name="segment">the number of a deathmatch piece, null for a round</param>
-    public void SubmitRoundData(List<Event> events, Guid matchId, int? segment)
+    public void SubmitRoundData(List<Event> events, List<PlayerShotInfo> shots, Guid matchId, int? segment)
     {
         if (events.Count == 0)
             return;
@@ -54,6 +54,7 @@ public class Networking
         _networkRoundFactory.PrepareRound(matchId);
         var roundInput = _networkRoundFactory.GetCurrentRoundInput(matchId);
         roundInput.Events = events;
+        roundInput.ShotInfo = shots.Count > 0 ? shots : null;
         roundInput.Segment = segment;
 
         _logger.LogInformation("Queueing round data for match {MatchId} (segment {Segment})", matchId, segment);

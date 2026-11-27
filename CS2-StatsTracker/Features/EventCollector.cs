@@ -1,9 +1,11 @@
 ﻿using System.Globalization;
+using System.Runtime.InteropServices;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Events;
 using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.UserMessages;
 using CSSharpUtils.Utils;
 using CS2_StatsTracker.Models;
 using Microsoft.Extensions.Logging;
@@ -19,6 +21,12 @@ public class EventCollector
     private readonly List<Event> _events = [];
     private int _roundEventId;
     private CCSGameRules? _gameRules;
+
+    // Each player's shots; sent beside the events, not as one.
+    private readonly Dictionary<string, List<ShotInfo>> _shots = new();
+
+    // CMsgTEFireBullets
+    private const int FireBulletsMessageId = 452;
     public Guid MatchId { get; private set; }
 
     // A deathmatch has one long round, so it is sent in pieces (segments) of DeathmatchSegmentSeconds instead of at
@@ -66,6 +74,7 @@ public class EventCollector
         plugin.RegisterEventHandler<EventHostageStopsFollowing>((e, info) => OnHostageEvent(e, info));
 
         plugin.RegisterEventHandler<EventWeaponFire>(OnWeaponFire);
+        plugin.HookUserMessage(FireBulletsMessageId, OnFireBullets);
 
         plugin.RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn);
         plugin.RegisterEventHandler<EventPlayerDeath>(OnPlayerDeath);
@@ -90,6 +99,7 @@ public class EventCollector
     private void StartRound()
     {
         _events.Clear();
+        _shots.Clear();
         _roundEventId = 0;
         _currentSegment = IsDeathmatch() ? ++_segmentCount : null;
         _segmentStartedAt = Server.CurrentTime;
@@ -102,9 +112,11 @@ public class EventCollector
     {
         if (_events.Any(e => e.Name == "round_end") ||
             (_currentSegment != null && _events.Any(e => e.Name != "round_start")))
-            _networking.SubmitRoundData(_events, MatchId, _currentSegment);
+            _networking.SubmitRoundData(_events,
+                _shots.Select(s => new PlayerShotInfo { SteamId = s.Key, Shots = s.Value }).ToList(), MatchId, _currentSegment);
 
         _events.Clear();
+        _shots.Clear();
         _roundEventId = 0;
         _currentSegment = null;
     }
@@ -157,6 +169,7 @@ public class EventCollector
     {
         _gameRules = null;
         _events.Clear();
+        _shots.Clear();
         _roundEventId = 0;
         _shouldCollect = true;
         _segmentCount = 0;
@@ -275,6 +288,116 @@ public class EventCollector
         ));
 
         return HookResult.Continue;
+    }
+
+    // The game announces every shot with this message: where it was fired from and at which angles.
+    private HookResult OnFireBullets(UserMessage message)
+    {
+        if (!_shouldCollect)
+            return HookResult.Continue;
+
+        try
+        {
+            // an entity handle: the low 15 bits are the entity index
+            var pawn = Utilities.GetEntityFromIndex<CCSPlayerPawn>((int)(message.ReadUInt("player") & 0x7FFF));
+            // JSON has no infinity or NaN
+            if (pawn is { IsValid: true, DesignerName: "player" } &&
+                pawn.Controller.Value?.As<CCSPlayerController>() is { IsValid: true, IsBot: false } player &&
+                ReadShotInfo(message) is { } shot && shot.Origin.All(float.IsFinite) && shot.Angles.All(float.IsFinite))
+            {
+                var steamId = player.SteamID.ToString();
+                if (!_shots.TryGetValue(steamId, out var shots))
+                    _shots[steamId] = shots = [];
+                shots.Add(shot);
+            }
+        }
+        catch
+        {
+            // this shot is left out
+        }
+
+        return HookResult.Continue;
+    }
+
+    // CounterStrikeSharp reads no field of a message inside the message (origin and angles are such), so they are read
+    // from the message's memory. The plugin's UserMessage starts with the pointer to the game's message
+    // (CNetMessagePB); in it the protobuf message follows the 0x30 bytes of CNetMessage and has the pointers to its
+    // origin at 0x18 and its angles at 0x20, each with x, y and z from 0x18.
+    private const int ProtobufOffset = 0x30;
+    private const int OriginOffset = 0x18;
+    private const int AnglesOffset = 0x20;
+    private const int VectorOffset = 0x18;
+
+    // Before the first read is trusted it is compared with the message as text once: a game update that moves the
+    // fields turns the reads off instead of sending wrong shots.
+    private bool _shotReadChecked;
+    private bool _shotReadOff;
+
+    private ShotInfo? ReadShotInfo(UserMessage message)
+    {
+        if (_shotReadOff)
+            return null;
+
+        var netMessage = Marshal.ReadIntPtr(message.Handle);
+        if (netMessage == IntPtr.Zero)
+            return null;
+        var shot = new ShotInfo
+        {
+            Origin = ReadVector(Marshal.ReadIntPtr(netMessage, ProtobufOffset + OriginOffset)),
+            Angles = ReadVector(Marshal.ReadIntPtr(netMessage, ProtobufOffset + AnglesOffset))
+        };
+        if (_shotReadChecked)
+            return shot;
+
+        // a shot whose text has no number to compare with (inf, nan) is left to the next one
+        if (FirstAngleFromText(message.DebugString) is not { } expected)
+            return null;
+        if (MathF.Abs(shot.Angles[0] - expected) > 1e-3f * MathF.Max(1, MathF.Abs(expected)))
+        {
+            _shotReadOff = true;
+            _logger.LogWarning("Shot angles read {Read} but the message says {Expected}: shots are no longer sent",
+                shot.Angles[0], expected);
+            return null;
+        }
+
+        _shotReadChecked = true;
+        return shot;
+    }
+
+    // x, y and z of a vector or angles message; all 0 when the message has none.
+    private static float[] ReadVector(IntPtr vector)
+    {
+        if (vector == IntPtr.Zero)
+            return [0, 0, 0];
+        return
+        [
+            BitConverter.Int32BitsToSingle(Marshal.ReadInt32(vector, VectorOffset)),
+            BitConverter.Int32BitsToSingle(Marshal.ReadInt32(vector, VectorOffset + 4)),
+            BitConverter.Int32BitsToSingle(Marshal.ReadInt32(vector, VectorOffset + 8))
+        ];
+    }
+
+    // The message as text: "angles {", then "x: <value>" among its lines; a value of 0 is left out there. Null when
+    // the text has no angles or the value is no number.
+    private static float? FirstAngleFromText(string text)
+    {
+        const string open = "angles {";
+        var start = text.StartsWith(open, StringComparison.Ordinal) ? 0 : text.IndexOf("\n" + open, StringComparison.Ordinal);
+        if (start < 0)
+            return null;
+        var end = text.IndexOf('}', start);
+        if (end < 0)
+            return null;
+
+        var block = text.AsSpan(start, end - start);
+        var x = block.IndexOf("x: ", StringComparison.Ordinal);
+        if (x < 0)
+            return 0;
+        var value = block[(x + 3)..];
+        var lineEnd = value.IndexOfAny('\r', '\n');
+        if (lineEnd >= 0)
+            value = value[..lineEnd];
+        return float.TryParse(value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var angle) ? angle : null;
     }
 
     private HookResult OnPlayerSpawn(EventPlayerSpawn e, GameEventInfo info)

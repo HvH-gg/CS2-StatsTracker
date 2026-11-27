@@ -1,6 +1,6 @@
 ![Copyright ev0lve Digital](https://img.shields.io/badge/Copyright-ev0lve%20Digital-blue)
 
-# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.9.1)
+# [HvH.gg](https://hvh.gg) CS2 Stats Tracker (1.10.0)
 
 Our CS2 Stats tracker plugin enables stats tracking for all players on a server.
 
